@@ -2,7 +2,7 @@
 EXPERIMENTAL YouTube Discussion Tab Downloader
 
 
-Reply pagination is not yet implemented, nor are rate-limit checks. Additionally, further accuracy checks should be performed.
+Rate-limit checks are untested. Additionally, further accuracy checks should be performed.
 
 USAGE: `python3 discussions.py [Channel UCID]`
 
