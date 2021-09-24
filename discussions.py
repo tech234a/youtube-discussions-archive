@@ -16,7 +16,10 @@ def getinitialdata(html: str):
     return {}
 
 def getapikey(html: str):
-    return html.split('"INNERTUBE_API_KEY":"', 1)[-1].split('"', 1)[0]
+    if '"INNERTUBE_API_KEY":"' in html:
+        return html.split('"INNERTUBE_API_KEY":"', 1)[-1].split('"', 1)[0]
+    else:
+        return "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
 
 #extract latest version automatically
 def getlver(initialdata: dict):
