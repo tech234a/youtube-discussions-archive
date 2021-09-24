@@ -95,7 +95,6 @@ def extractcomment(comment, is_reply=False):
     commentroot["authorText"] = itemint["authorText"]["simpleText"]
     commentroot["authorThumbnail"] = itemint["authorThumbnail"]["thumbnails"][0] #joinurls(itemint["authorThumbnail"]["thumbnails"])
     commentroot["authorEndpoint"] = itemint["authorEndpoint"]["browseEndpoint"]["browseId"]
-    commentroot["authorUrl"] = itemint["authorEndpoint"]["browseEndpoint"]["canonicalBaseUrl"]
     commentroot["contentText"] = joinruns(itemint["contentText"]["runs"])
     commentroot["publishedTimeText"] = joinruns(itemint["publishedTimeText"]["runs"])
     commentroot["creatorHeart"] = "creatorHeart" in itemint["actionButtons"]["commentActionButtonsRenderer"].keys() #accurate enough?
