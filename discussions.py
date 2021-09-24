@@ -1,13 +1,13 @@
 import base64
 from requests import session
 from json import loads, dumps
-from time import time
+from time import time, sleep
 from sys import argv
 
-#todo: reply pagination, check for accuracy, add ratelimit checks if needed, additional language locking (headers)/ gl US
-#data questions: add author URLs, simplify profile picture URLs
+#todo: check for accuracy, add/test ratelimit checks if needed, additional language locking (headers)/ gl US
+#data questions: add author URLs, simplify/reduce profile picture URLs (for less duplicate data)
 
-#completed: author hearts, retrieval timestamp, handle no votecount, pinned? - not an option
+#completed: reply pagination, author hearts, retrieval timestamp, handle no votecount, pinned? - not an option
 
 def getinitialdata(html: str):
     for line in html.splitlines():
@@ -67,7 +67,13 @@ def _generate_discussion_continuation(channel_id):
     return base64.b64encode(first + ch_id + second + _generate_secondary_token()).decode('utf-8')
 
 def docontinuation(continuation, endpoint="browse"):
-    r = mysession.post("https://www.youtube.com/youtubei/v1/"+endpoint+"?key="+API_KEY, json = {"context":{"client":{"hl":"en","clientName":"WEB","clientVersion":API_VERSION,"timeZone": "UTC"}, "user": {"lockedSafetyMode": False}},"continuation": continuation}, headers={"x-youtube-client-name": "1", "x-youtube-client-version": API_VERSION})
+    while True:
+        r = mysession.post("https://www.youtube.com/youtubei/v1/"+endpoint+"?key="+API_KEY, json = {"context":{"client":{"hl":"en","clientName":"WEB","clientVersion":API_VERSION,"timeZone": "UTC"}, "user": {"lockedSafetyMode": False}},"continuation": continuation}, headers={"x-youtube-client-name": "1", "x-youtube-client-version": API_VERSION})
+        if r.ok:
+            break
+        else:
+            print("Ratelimit, waiting 30 seconds", r.status_code)
+            sleep(30)
 
     #open("test2.json", "w").write(r.text)
 
@@ -75,10 +81,13 @@ def docontinuation(continuation, endpoint="browse"):
 
 def extractcomment(comment, is_reply=False):
     commentroot = {}
-    if not is_reply:
-        itemint = comment["commentThreadRenderer"]["comment"]["commentRenderer"]
-    else:
-        itemint = comment["commentRenderer"]
+    try:
+        if not is_reply:
+            itemint = comment["commentThreadRenderer"]["comment"]["commentRenderer"]
+        else:
+            itemint = comment["commentRenderer"]
+    except:
+        print(comment)
 
     commentroot["authorText"] = itemint["authorText"]["simpleText"]
     commentroot["authorThumbnail"] = joinurls(itemint["authorThumbnail"]["thumbnails"])
@@ -99,9 +108,18 @@ def extractcomment(comment, is_reply=False):
         commentroot["replies"] = []
         if "replies" in comment["commentThreadRenderer"].keys():
             myjr = docontinuation(comment["commentThreadRenderer"]["replies"]["commentRepliesRenderer"]["contents"][0]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"], "comment/get_comment_replies")[0]["appendContinuationItemsAction"]["continuationItems"]
-            for itemr in myjr:
-                commentroot["replies"].append(extractcomment(itemr, True)[0])
-                addcnt += 1
+            
+            while True:
+                for itemr in myjr:
+                    if "commentRenderer" in itemr.keys():
+                        commentroot["replies"].append(extractcomment(itemr, True)[0])
+                        addcnt += 1
+
+                if "continuationItemRenderer" in myjr[-1].keys():
+                    myjr = docontinuation(myjr[-1]["continuationItemRenderer"]["button"]["buttonRenderer"]["command"]["continuationCommand"]["token"], "comment/get_comment_replies")[0]["appendContinuationItemsAction"]["continuationItems"]
+                    #print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
+                else:
+                    break
 
     return commentroot, addcnt
 
@@ -128,7 +146,7 @@ def main(channel_id):
                 commentcnt += addcnt
 
         if "continuationItemRenderer" in myj[-1].keys():
-            myj = docontinuation(item["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"])[0]["appendContinuationItemsAction"]["continuationItems"]
+            myj = docontinuation(myj[-1]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"])[0]["appendContinuationItemsAction"]["continuationItems"]
             print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
         else:
             break
@@ -143,7 +161,7 @@ if len(argv) == 2:
 else:
     print("""YouTube Discussion Tab Downloader by tech234a
     ***THIS SCRIPT IS EXPERIMENTAL***
-    Reply pagination is not yet implemented, nor are rate-limit checks. Additionally, further accuracy checks should be performed.
+    Rate-limit checks are untested. Additionally, further accuracy checks should be performed.
     USAGE: python3 discussions.py [Channel UCID]
     REQUIREMENTS: requests (pip install requests)
     NOTES: Only provide 1 channel UCID at a time. Usernames/channel URLs are not supported.""")
