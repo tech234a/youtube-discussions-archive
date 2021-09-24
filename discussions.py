@@ -157,8 +157,8 @@ def main(channel_id):
             print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
             break
 
-
-    open(channel_id+".json", "w").write(dumps({"timestamp": timestamp, "comments": comments}))
+    # minify JSON https://stackoverflow.com/a/33233406
+    open(channel_id+".json", "w").write(dumps({"timestamp": timestamp, "comments": comments}, separators=(',', ':')))
 
     print("Success!")
 
