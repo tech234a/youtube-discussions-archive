@@ -93,8 +93,9 @@ def extractcomment(comment, is_reply=False):
         print(comment)
 
     commentroot["authorText"] = itemint["authorText"]["simpleText"]
-    commentroot["authorThumbnail"] = joinurls(itemint["authorThumbnail"]["thumbnails"])
+    commentroot["authorThumbnail"] = itemint["authorThumbnail"]["thumbnails"][0] #joinurls(itemint["authorThumbnail"]["thumbnails"])
     commentroot["authorEndpoint"] = itemint["authorEndpoint"]["browseEndpoint"]["browseId"]
+    commentroot["authorUrl"] = itemint["authorEndpoint"]["browseEndpoint"]["canonicalBaseUrl"]
     commentroot["contentText"] = joinruns(itemint["contentText"]["runs"])
     commentroot["publishedTimeText"] = joinruns(itemint["publishedTimeText"]["runs"])
     commentroot["creatorHeart"] = "creatorHeart" in itemint["actionButtons"]["commentActionButtonsRenderer"].keys() #accurate enough?
@@ -154,6 +155,7 @@ def main(channel_id):
             myj = docontinuation(myj[-1]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"])[0]["appendContinuationItemsAction"]["continuationItems"]
             print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
         else:
+            print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
             break
 
 
