@@ -161,10 +161,13 @@ def main(channel_id):
             print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
             break
 
-    # minify JSON https://stackoverflow.com/a/33233406
-    open(channel_id+".json", "w").write(dumps({"timestamp": timestamp, "comments": comments}, separators=(',', ':')))
+    if commentcnt == commentscount:
+        # minify JSON https://stackoverflow.com/a/33233406
+        open(channel_id+".json", "w").write(dumps({"timestamp": timestamp, "comments": comments}, separators=(',', ':')))
 
-    print("Success!")
+        print("Success!")
+    else:
+        print("Number of retrieved comments does not equal expected count, not writing output.")
 
 if len(argv) == 2:
     main(argv[1])
