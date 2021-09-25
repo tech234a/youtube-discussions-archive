@@ -4,8 +4,7 @@ from json import loads, dumps
 from time import time, sleep
 from sys import argv
 
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from datetime import datetime
 
 #todo: check for accuracy, add/test ratelimit checks if needed, additional language locking (headers)/ gl US
 
@@ -43,18 +42,7 @@ def joinruns(runs):
 #     return myl
 
 
-# Based on https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
-# and code written by afrmtbl for https://github.com/Data-Horde/ytcc-archive/blob/master/tracker.py
-retry_strategy = Retry(
-    total=10,
-    backoff_factor=10, # Delay 10 seconds - 5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560
-    status_forcelist=[x for x in range(500, 600)] + [x for x in range(300, 400)] + [429], # retry on 5XX, 3XX, 429
-    method_whitelist=["GET", "POST"]
-)
-adapter = HTTPAdapter(max_retries=retry_strategy)
 mysession = session()
-mysession.mount("https://", adapter)
-mysession.mount("http://", adapter)
 
 #extract latest version automatically
 homepage = mysession.get("https://www.youtube.com/").text
@@ -80,13 +68,25 @@ def _generate_discussion_continuation(channel_id):
     return base64.b64encode(first + ch_id + second + _generate_secondary_token()).decode('utf-8')
 
 def docontinuation(continuation, endpoint="browse"):
+    tries = 0
     while True:
-        r = mysession.post("https://www.youtube.com/youtubei/v1/"+endpoint+"?key="+API_KEY, json = {"context":{"client":{"hl":"en","clientName":"WEB","clientVersion":API_VERSION,"timeZone": "UTC"}, "user": {"lockedSafetyMode": False}},"continuation": continuation}, headers={"x-youtube-client-name": "1", "x-youtube-client-version": API_VERSION}, allow_redirects=False)
-        if r.ok:
-            break
-        else:
-            print("Ratelimit, waiting 30 seconds", r.status_code)
-            sleep(30)
+        try:
+            r = mysession.post("https://www.youtube.com/youtubei/v1/"+endpoint+"?key="+API_KEY, json = {"context":{"client":{"hl":"en","clientName":"WEB","clientVersion":API_VERSION,"timeZone": "UTC"}, "user": {"lockedSafetyMode": False}},"continuation": continuation}, headers={"x-youtube-client-name": "1", "x-youtube-client-version": API_VERSION}, allow_redirects=False)
+            if r.status_code == 200:
+                break
+            else:
+                print("WARNING: Non-200 status code received")
+        except:
+            print("Other error")
+        if tries > 9:
+            print("WARNING: 10 failed attempts, aborting")
+            return "[fail]"
+        tries += 1
+        timetosleep = 10 * (2 ** (tries-2)) # 5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560 https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
+        print("INFO:", datetime.now(), ": Sleeping", timetosleep, "seconds")
+        sleep(timetosleep)
+
+
 
     #open("test2.json", "w").write(r.text)
 
@@ -123,7 +123,10 @@ def extractcomment(comment, is_reply=False):
         commentroot["replies"] = []
         if "replies" in comment["commentThreadRenderer"].keys():
             myjr = docontinuation(comment["commentThreadRenderer"]["replies"]["commentRepliesRenderer"]["contents"][0]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"], "comment/get_comment_replies")[0]["appendContinuationItemsAction"]["continuationItems"]
-            
+            if myjr == "[fail]":
+                return "fail", 0
+
+
             while True:
                 for itemr in myjr:
                     if "commentRenderer" in itemr.keys():
@@ -132,6 +135,8 @@ def extractcomment(comment, is_reply=False):
 
                 if "continuationItemRenderer" in myjr[-1].keys():
                     myjr = docontinuation(myjr[-1]["continuationItemRenderer"]["button"]["buttonRenderer"]["command"]["continuationCommand"]["token"], "comment/get_comment_replies")[0]["appendContinuationItemsAction"]["continuationItems"]
+                    if myjr == "[fail]":
+                        return "fail", 0
                     #print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
                 else:
                     break
@@ -144,6 +149,8 @@ def main(channel_id):
 
     try:
         cont = docontinuation(_generate_discussion_continuation(channel_id))
+        if cont == "[fail]":
+            return
 
         myj = cont[1]["reloadContinuationItemsCommand"]["continuationItems"]
     except:
@@ -161,11 +168,15 @@ def main(channel_id):
         for item in myj:
             if "commentThreadRenderer" in item.keys():
                 commentfinal, addcnt = extractcomment(item)
+                if commentfinal == "fail":
+                    return
                 comments.append(commentfinal)
                 commentcnt += addcnt
 
         if "continuationItemRenderer" in myj[-1].keys():
             myj = docontinuation(myj[-1]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"])[0]["appendContinuationItemsAction"]["continuationItems"]
+            if myj == "[fail]":
+                return
             print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
         else:
             print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
