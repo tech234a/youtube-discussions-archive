@@ -96,10 +96,10 @@ def extractcomment(comment, is_reply=False):
     commentroot["authorThumbnail"] = itemint["authorThumbnail"]["thumbnails"][0] #joinurls(itemint["authorThumbnail"]["thumbnails"])
     commentroot["authorEndpoint"] = itemint["authorEndpoint"]["browseEndpoint"]["browseId"]
     commentroot["contentText"] = joinruns(itemint["contentText"]["runs"])
-    commentroot["publishedTimeText"] = joinruns(itemint["publishedTimeText"]["runs"])
+    commentroot["publishedTimeText"] = joinruns(itemint["publishedTimeText"]["runs"]).removesuffix(" (edited)")
     commentroot["creatorHeart"] = "creatorHeart" in itemint["actionButtons"]["commentActionButtonsRenderer"].keys() #accurate enough?
     commentroot["commentId"] = itemint["commentId"]
-    commentroot["edited"] = "(" in commentroot["publishedTimeText"] # hopefully this works for all languages
+    commentroot["edited"] = " (edited)" in joinruns(itemint["publishedTimeText"]["runs"]) # hopefully this works for all languages
     #print(commentroot)
     #print(itemint.keys())
     if "voteCount" in itemint.keys():
