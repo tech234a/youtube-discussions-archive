@@ -156,13 +156,14 @@ def main(channel_id):
             print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
             break
 
-    if commentcnt == commentscount:
-        # minify JSON https://stackoverflow.com/a/33233406
-        open(channel_id+".json", "w").write(dumps({"timestamp": timestamp, "comments": comments}, separators=(',', ':')))
+    if commentcnt != commentscount:
+        print("INFO: Number of retrieved comments does not equal expected count. This is a common occurence due to inaccuracies in YouTube's counting system and can safely be ignored in most cases.")
 
-        print("Success!")
-    else:
-        print("Number of retrieved comments does not equal expected count, not writing output.")
+    # minify JSON https://stackoverflow.com/a/33233406
+    open(channel_id+".json", "w").write(dumps({"timestamp": timestamp, "comments": comments}, separators=(',', ':')))
+
+    print("Success!")
+        
 
 if len(argv) == 2:
     main(argv[1])
