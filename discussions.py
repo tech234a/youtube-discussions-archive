@@ -132,9 +132,13 @@ def extractcomment(comment, is_reply=False):
 def main(channel_id):
     timestamp = time()
 
-    cont = docontinuation(_generate_discussion_continuation(channel_id))
+    try:
+        cont = docontinuation(_generate_discussion_continuation(channel_id))
 
-    myj = cont[1]["reloadContinuationItemsCommand"]["continuationItems"]
+        myj = cont[1]["reloadContinuationItemsCommand"]["continuationItems"]
+    except:
+        print("Error in processing response: Are you rate-limited or trying to access a terminated or automatically-generated channel?")
+        return
 
     commentscount = int(cont[0]["reloadContinuationItemsCommand"]["continuationItems"][0]["commentsHeaderRenderer"]["countText"]["runs"][0]["text"].replace(",", ""))
 
