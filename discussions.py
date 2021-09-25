@@ -73,7 +73,24 @@ def docontinuation(continuation, endpoint="browse"):
         try:
             r = mysession.post("https://www.youtube.com/youtubei/v1/"+endpoint+"?key="+API_KEY, json = {"context":{"client":{"hl":"en","clientName":"WEB","clientVersion":API_VERSION,"timeZone": "UTC"}, "user": {"lockedSafetyMode": False}},"continuation": continuation}, headers={"x-youtube-client-name": "1", "x-youtube-client-version": API_VERSION}, allow_redirects=False)
             if r.status_code == 200:
-                break
+                try:
+                    #open("test2.json", "w").write(r.text)
+
+                    myrjson = r.json()
+                    myrjsonkeys = myrjson.keys()
+
+                    if "error" in myrjsonkeys:
+                        if "message" in myrjson["error"].keys():
+                            print("WARNING: Error from YouTube: \""+myrjson["error"]["message"]+"\"")
+                        else:
+                            print("WARNING: Error from YouTube, no error message provided")
+                    elif "onResponseReceivedEndpoints" in myrjsonkeys:
+                        return myrjson["onResponseReceivedEndpoints"]
+                    else:
+                        print("WARNING: Invalid Response: onResponseReceivedEndpoints missing from response.")
+                except:
+                    print("WARNING: Invalid Response: Response is not JSON-formatted")
+                    
             else:
                 print("WARNING: Non-200 status code received")
         except:
@@ -85,12 +102,6 @@ def docontinuation(continuation, endpoint="browse"):
         timetosleep = 10 * (2 ** (tries-2)) # 5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560 https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
         print("INFO:", datetime.now(), ": Sleeping", timetosleep, "seconds")
         sleep(timetosleep)
-
-
-
-    #open("test2.json", "w").write(r.text)
-
-    return r.json()["onResponseReceivedEndpoints"]
 
 def extractcomment(comment, is_reply=False):
     commentroot = {}
