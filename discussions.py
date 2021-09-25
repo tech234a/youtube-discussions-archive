@@ -5,7 +5,6 @@ from time import time, sleep
 from sys import argv
 
 #todo: check for accuracy, add/test ratelimit checks if needed, additional language locking (headers)/ gl US
-#data questions: add author URLs, simplify/reduce profile picture URLs (for less duplicate data)
 
 #completed: reply pagination, author hearts, retrieval timestamp, handle no votecount, pinned? - not an option
 
@@ -34,11 +33,11 @@ def joinruns(runs):
         mys += run["text"]
     return mys
 
-def joinurls(urls):
-    myl = []
-    for url in urls:
-        myl.append(url["url"])
-    return myl
+# def joinurls(urls):
+#     myl = []
+#     for url in urls:
+#         myl.append(url["url"])
+#     return myl
 
 mysession = session()
 
@@ -46,10 +45,6 @@ mysession = session()
 homepage = mysession.get("https://www.youtube.com/").text
 
 API_KEY = getapikey(homepage)
-
-params = (
-    ('key', API_KEY),
-)
 
 API_VERSION = getlver(getinitialdata(homepage))
 
