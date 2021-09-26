@@ -238,7 +238,7 @@ def main(channel_id):
         print("INFO: Number of retrieved comments does not equal expected count. This is a common occurence due to inaccuracies in YouTube's counting system and can safely be ignored in most cases.")
 
     # minify JSON https://stackoverflow.com/a/33233406
-    open(channel_id+".json", "w").write(dumps({"timestamp": timestamp, "comments": comments}, separators=(',', ':')))
+    open(channel_id+".json", "w").write(dumps({"UCID": channel_id, "timestamp": timestamp, "comments": comments}, separators=(',', ':')))
 
     print("Success!")
         
