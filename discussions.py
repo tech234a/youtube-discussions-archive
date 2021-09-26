@@ -120,9 +120,17 @@ def extractcomment(comment, is_reply=False):
     except:
         print(comment)
 
-    commentroot["authorText"] = itemint["authorText"]["simpleText"]
+    if "simpleText" in itemint["authorText"].keys():
+        commentroot["authorText"] = itemint["authorText"]["simpleText"]
+    else:
+        print("WARNING: Author name not provided, setting to blank.")
+        commentroot["authorText"] = ""
     commentroot["authorThumbnail"] = itemint["authorThumbnail"]["thumbnails"][0] #joinurls(itemint["authorThumbnail"]["thumbnails"])
-    commentroot["authorEndpoint"] = itemint["authorEndpoint"]["browseEndpoint"]["browseId"]
+    if "browseId" in itemint["authorEndpoint"]["browseEndpoint"].keys():
+        commentroot["authorEndpoint"] = itemint["authorEndpoint"]["browseEndpoint"]["browseId"]
+    else:
+        print("WARNING: Author UCID not provided, setting to blank.")
+        commentroot["authorEndpoint"] = ""
     commentroot["contentText"] = joinruns(itemint["contentText"]["runs"])
     commentroot["publishedTimeText"] = joinruns(itemint["publishedTimeText"]["runs"]).removesuffix(" (edited)")
     commentroot["creatorHeart"] = "creatorHeart" in itemint["actionButtons"]["commentActionButtonsRenderer"].keys() #accurate enough?
