@@ -1,4 +1,4 @@
-import base64
+from base64 import b64decode, b64encode
 from requests import session
 from json import loads, dumps
 from time import time, sleep
@@ -59,13 +59,13 @@ def _generate_discussion_continuation(channel_id):
     ch_id = bytes(channel_id.encode('utf-8'))
 
     def _generate_secondary_token():
-        first = base64.b64decode('EgpkaXNjdXNzaW9uqgM2IiASGA==')
-        second = base64.b64decode('KAEwAXgCOAFCEGNvbW1lbnRzLXNlY3Rpb24=')
-        return base64.b64encode(first + ch_id + second)
+        first = b64decode('EgpkaXNjdXNzaW9uqgM2IiASGA==')
+        second = b64decode('KAEwAXgCOAFCEGNvbW1lbnRzLXNlY3Rpb24=')
+        return b64encode(first + ch_id + second)
 
-    first = base64.b64decode('4qmFsgJ4Ehg=')
-    second = base64.b64decode('Glw=')
-    return base64.b64encode(first + ch_id + second + _generate_secondary_token()).decode('utf-8')
+    first = b64decode('4qmFsgJ4Ehg=')
+    second = b64decode('Glw=')
+    return b64encode(first + ch_id + second + _generate_secondary_token()).decode('utf-8')
 
 def docontinuation(continuation, endpoint="browse"):
     tries = 0
