@@ -72,29 +72,36 @@ def docontinuation(continuation, endpoint="browse"):
     while True:
         try:
             r = mysession.post("https://www.youtube.com/youtubei/v1/"+endpoint+"?key="+API_KEY, json = {"context":{"client":{"hl":"en","clientName":"WEB","clientVersion":API_VERSION,"timeZone": "UTC"}, "user": {"lockedSafetyMode": False}},"continuation": continuation}, headers={"x-youtube-client-name": "1", "x-youtube-client-version": API_VERSION}, allow_redirects=False)
-            if r.status_code == 200:
-                try:
-                    #open("test2.json", "w").write(r.text)
+            #print(r.text)
+            #if r.status_code == 200:
+            try:
+                #open("test2.json", "w").write(r.text)
 
-                    myrjson = r.json()
-                    myrjsonkeys = myrjson.keys()
+                myrjson = r.json()
+                myrjsonkeys = myrjson.keys()
 
-                    if "error" in myrjsonkeys:
-                        if "message" in myrjson["error"].keys():
-                            print("WARNING: Error from YouTube: \""+myrjson["error"]["message"]+"\"")
-                        else:
-                            print("WARNING: Error from YouTube, no error message provided")
-                    elif "onResponseReceivedEndpoints" in myrjsonkeys:
-                        return myrjson["onResponseReceivedEndpoints"]
+                if "error" in myrjsonkeys:
+                    if "message" in myrjson["error"].keys():
+                        print("WARNING: Error from YouTube: \""+myrjson["error"]["message"]+"\"")
                     else:
-                        print("WARNING: Invalid Response: onResponseReceivedEndpoints missing from response.")
-                except:
-                    print("WARNING: Invalid Response: Response is not JSON-formatted")
-                    
-            else:
-                print("WARNING: Non-200 status code received")
+                        print("WARNING: Error from YouTube, no error message provided")
+                elif "onResponseReceivedEndpoints" in myrjsonkeys and r.status_code == 200:
+                    return myrjson["onResponseReceivedEndpoints"]
+                elif r.status_code != 200:
+                    print("WARNING: Non-200 status code received")
+                    #print(r.status_code)
+                    #print(r.text)
+                elif "onResponseReceivedEndpoints" not in myrjsonkeys:
+                    print("WARNING: Invalid Response: onResponseReceivedEndpoints missing from response.")
+                else:
+                    print("WARNING: Other error (type 1)")
+            except:
+                print("WARNING: Invalid Response: Response is not JSON-formatted")
+                
+            #else:
+
         except:
-            print("Other error")
+            print("WARNING: Other error (type 2)")
         if tries > 9:
             print("WARNING: 10 failed attempts, aborting")
             return "[fail]"
