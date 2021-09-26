@@ -133,10 +133,14 @@ def extractcomment(comment, is_reply=False):
     if not is_reply:
         commentroot["replies"] = []
         if "replies" in comment["commentThreadRenderer"].keys():
-            myjr = docontinuation(comment["commentThreadRenderer"]["replies"]["commentRepliesRenderer"]["contents"][0]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"], "comment/get_comment_replies")[0]["appendContinuationItemsAction"]["continuationItems"]
-            if myjr == "[fail]":
+            myjrind = docontinuation(comment["commentThreadRenderer"]["replies"]["commentRepliesRenderer"]["contents"][0]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"], "comment/get_comment_replies")
+            if myjrind == "[fail]":
                 return "fail", 0
-
+            if "continuationItems" in myjrind[0]["appendContinuationItemsAction"].keys():
+                myjr = myjrind[0]["appendContinuationItemsAction"]["continuationItems"]
+            else:
+                print("WARNING: Missing continuationItems key, treating as end of comments.")
+                return commentroot, addcnt
 
             while True:
                 for itemr in myjr:
@@ -145,9 +149,15 @@ def extractcomment(comment, is_reply=False):
                         addcnt += 1
 
                 if "continuationItemRenderer" in myjr[-1].keys():
-                    myjr = docontinuation(myjr[-1]["continuationItemRenderer"]["button"]["buttonRenderer"]["command"]["continuationCommand"]["token"], "comment/get_comment_replies")[0]["appendContinuationItemsAction"]["continuationItems"]
-                    if myjr == "[fail]":
+                    myjrin = docontinuation(myjr[-1]["continuationItemRenderer"]["button"]["buttonRenderer"]["command"]["continuationCommand"]["token"], "comment/get_comment_replies")
+                    if myjrin == "[fail]":
                         return "fail", 0
+
+                    if "continuationItems" in myjrin[0]["appendContinuationItemsAction"].keys():
+                        myjr = myjrin[0]["appendContinuationItemsAction"]["continuationItems"]
+                    else:
+                        print("WARNING: Missing continuationItems key, treating as end of replies.")
+                        break
                     #print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
                 else:
                     break
@@ -163,9 +173,15 @@ def main(channel_id):
         if cont == "[fail]":
             return
 
-        myj = cont[1]["reloadContinuationItemsCommand"]["continuationItems"]
+        if "continuationItems" in cont[1]["reloadContinuationItemsCommand"].keys():
+            myj = cont[1]["reloadContinuationItemsCommand"]["continuationItems"]
+        else:
+            myj = [{}]
+            print("WARNING: Missing continuationItems key, treating as end of comments.")
+        
     except:
         print("Error in processing response: Are you rate-limited or trying to access a terminated or automatically-generated channel?")
+        raise
         return
 
     commentscount = int(cont[0]["reloadContinuationItemsCommand"]["continuationItems"][0]["commentsHeaderRenderer"]["countText"]["runs"][0]["text"].replace(",", ""))
@@ -185,12 +201,22 @@ def main(channel_id):
                 commentcnt += addcnt
 
         if "continuationItemRenderer" in myj[-1].keys():
-            myj = docontinuation(myj[-1]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"])[0]["appendContinuationItemsAction"]["continuationItems"]
+            myjino = docontinuation(myj[-1]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"])
             if myj == "[fail]":
                 return
+
+            if "continuationItems" in myjino[0]["appendContinuationItemsAction"].keys():
+                myj = myjino[0]["appendContinuationItemsAction"]["continuationItems"]
+            else:
+                print("WARNING: Missing continuationItems key, treating as end of comments.")
+                break
+
             print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
         else:
-            print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
+            try:
+                print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
+            except ZeroDivisionError:
+                print("0/0, 100.0%")
             break
 
     if commentcnt != commentscount:
