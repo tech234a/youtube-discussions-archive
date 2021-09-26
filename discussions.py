@@ -68,10 +68,13 @@ def _generate_discussion_continuation(channel_id):
     return b64encode(first + ch_id + second + _generate_secondary_token()).decode('utf-8')
 
 def docontinuation(continuation, endpoint="browse"):
+    #print(continuation)
+    #print(endpoint)
     tries = 0
     while True:
         try:
             r = mysession.post("https://www.youtube.com/youtubei/v1/"+endpoint+"?key="+API_KEY, json = {"context":{"client":{"hl":"en","clientName":"WEB","clientVersion":API_VERSION,"timeZone": "UTC"}, "user": {"lockedSafetyMode": False}},"continuation": continuation}, headers={"x-youtube-client-name": "1", "x-youtube-client-version": API_VERSION}, allow_redirects=False)
+            #print(r.status_code)
             #print(r.text)
             #if r.status_code == 200:
             try:
@@ -83,10 +86,20 @@ def docontinuation(continuation, endpoint="browse"):
                 if "error" in myrjsonkeys:
                     if "message" in myrjson["error"].keys():
                         print("WARNING: Error from YouTube: \""+myrjson["error"]["message"]+"\"")
+                        if myrjson["error"]["message"] == "Requested entity was not found." and r.status_code == 404:
+                            if endpoint == "comment/get_comment_replies":
+                                print("INFO: Treating as end of replies.")
+                                return [{"appendContinuationItemsAction": {"continuationItems" : [{}]}}]
+                            elif endpoint == "browse":
+                                print("INFO: Treating as end of comments.")
+                                return [{"reloadContinuationItemsCommand": {"continuationItems" : [{}]}}]
                     else:
                         print("WARNING: Error from YouTube, no error message provided")
                 elif "onResponseReceivedEndpoints" in myrjsonkeys and r.status_code == 200:
                     return myrjson["onResponseReceivedEndpoints"]
+                elif r.status_code == 404:
+                    print("WARNING: 404 status code retrieved, aborting.")
+                    return "[fail]"
                 elif r.status_code != 200:
                     print("WARNING: Non-200 status code received")
                     #print(r.status_code)
@@ -238,7 +251,7 @@ def main(channel_id):
         print("INFO: Number of retrieved comments does not equal expected count. This is a common occurence due to inaccuracies in YouTube's counting system and can safely be ignored in most cases.")
 
     # minify JSON https://stackoverflow.com/a/33233406
-    open(channel_id+".json", "w").write(dumps({"UCID": channel_id, "timestamp": timestamp, "comments": comments}, separators=(',', ':')))
+    open(channel_id+".json", "w").write(dumps({"UCID": channel_id, "expected_count": commentscount, "timestamp": timestamp, "comments": comments}, separators=(',', ':')))
 
     print("Success!")
         
