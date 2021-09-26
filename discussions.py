@@ -125,7 +125,7 @@ def extractcomment(comment, is_reply=False):
     else:
         print("WARNING: Author name not provided, setting to blank.")
         commentroot["authorText"] = ""
-    commentroot["authorThumbnail"] = itemint["authorThumbnail"]["thumbnails"][0] #joinurls(itemint["authorThumbnail"]["thumbnails"])
+    commentroot["authorThumbnail"] = itemint["authorThumbnail"]["thumbnails"][0]["url"] #joinurls(itemint["authorThumbnail"]["thumbnails"])
     if "browseId" in itemint["authorEndpoint"]["browseEndpoint"].keys():
         commentroot["authorEndpoint"] = itemint["authorEndpoint"]["browseEndpoint"]["browseId"]
     else:
