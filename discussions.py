@@ -150,7 +150,11 @@ def extractcomment(comment, is_reply=False):
     else:
         print("WARNING: Author UCID not provided, setting to blank.")
         commentroot["authorEndpoint"] = ""
-    commentroot["contentText"] = joinruns(itemint["contentText"]["runs"])
+    if "runs" in itemint["contentText"].keys():
+        commentroot["contentText"] = joinruns(itemint["contentText"]["runs"])
+    else:
+        print("WARNING: Missing contentText runs, setting to blank.")
+        commentroot["contentText"] = ""
     commentroot["publishedTimeText"] = joinruns(itemint["publishedTimeText"]["runs"]).removesuffix(" (edited)")
     commentroot["creatorHeart"] = "creatorHeart" in itemint["actionButtons"]["commentActionButtonsRenderer"].keys() #accurate enough?
     commentroot["commentId"] = itemint["commentId"]
@@ -167,6 +171,11 @@ def extractcomment(comment, is_reply=False):
     if not is_reply:
         commentroot["replies"] = []
         if "replies" in comment["commentThreadRenderer"].keys():
+            creplycntruns = comment["commentThreadRenderer"]["replies"]["commentRepliesRenderer"]["viewReplies"]["buttonRenderer"]["text"]["runs"]
+            if len(creplycntruns) == 2 or len(creplycntruns) == 1:
+                commentroot["expected_replies"] = 1
+            else:
+                commentroot["expected_replies"] = int(creplycntruns[1]["text"])
             myjrind = docontinuation(comment["commentThreadRenderer"]["replies"]["commentRepliesRenderer"]["contents"][0]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"], "comment/get_comment_replies")
             if myjrind == "[fail]":
                 return "fail", 0
@@ -195,6 +204,8 @@ def extractcomment(comment, is_reply=False):
                     #print(str(commentcnt) + "/" + str(commentscount)+", "+str(100*(commentcnt/commentscount))+"%")
                 else:
                     break
+        else:
+            commentroot["expected_replies"] = 0
 
     return commentroot, addcnt
 
