@@ -10,6 +10,17 @@ from datetime import datetime
 
 #completed: reply pagination, author hearts, retrieval timestamp, handle no votecount, pinned? - not an option
 
+def approxnumtoint(num: str):
+    if num[-1] == "K":
+        print(num)
+        print(int(float(num[:-1].replace(",", ""))*1000))
+        return int(float(num[:-1].replace(",", ""))*1000)
+    if num[-1] == "M":
+        print(num)
+        print(int(float(num[:-1].replace(",", ""))*1000000))
+        return int(float(num[:-1].replace(",", ""))*1000000)
+    return int(num.replace(",", ""))
+
 def getinitialdata(html: str):
     for line in html.splitlines():
         if line.strip().startswith('window["ytInitialData"] = '):
@@ -162,7 +173,7 @@ def extractcomment(comment, is_reply=False):
     #print(commentroot)
     #print(itemint.keys())
     if "voteCount" in itemint.keys():
-        commentroot["voteCount"] = int(itemint["voteCount"]["simpleText"].replace(",", ""))
+        commentroot["voteCount"] = approxnumtoint(itemint["voteCount"]["simpleText"])
     else:
         #print("NO VOTECOUNT")
         commentroot["voteCount"] = 0
