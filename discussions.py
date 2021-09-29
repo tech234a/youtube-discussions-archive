@@ -218,6 +218,9 @@ def extractcomment(comment, is_reply=False):
         else:
             commentroot["expected_replies"] = 0
 
+        if len(commentroot["replies"]) != commentroot["expected_replies"]:
+            print("WARNING: Number of retrieved replies does not equal number of expected replies.")
+
     return commentroot, addcnt
 
 
