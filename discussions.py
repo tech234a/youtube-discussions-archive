@@ -97,7 +97,7 @@ def docontinuation(continuation, endpoint="browse"):
                 if "error" in myrjsonkeys:
                     if "message" in myrjson["error"].keys():
                         print("WARNING: Error from YouTube: \""+myrjson["error"]["message"]+"\"")
-                        if myrjson["error"]["message"] == "Requested entity was not found." and r.status_code == 404:
+                        if (myrjson["error"]["message"] == "Requested entity was not found." and r.status_code == 404) or (myrjson["error"]["message"] == "The caller does not have permission" and r.status_code == 403):
                             if endpoint == "comment/get_comment_replies":
                                 print("INFO: Treating as end of replies.")
                                 return [{"appendContinuationItemsAction": {"continuationItems" : [{}]}}]
