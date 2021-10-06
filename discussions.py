@@ -1,4 +1,6 @@
 from base64 import b64decode, b64encode
+
+import requests
 from requests import session
 from json import loads, dumps
 from time import time, sleep
@@ -125,13 +127,10 @@ def docontinuation(continuation, endpoint="browse"):
                     print("WARNING: Invalid Response: onResponseReceivedEndpoints missing from response.")
                 else:
                     print("WARNING: Other error (type 1)")
-            except:
+            except (IndexError, KeyError, AttributeError, TypeError):
                 print("WARNING: Invalid Response: Response is not JSON-formatted")
-                
-            #else:
-
-        except:
-            print("WARNING: Other error (type 2)")
+        except requests.exceptions.RequestException as e:
+            print("WARNING: Other error: " + str(e))
         if tries > 5:
             print("WARNING: 5 failed attempts, aborting")
             return "[fail]"
