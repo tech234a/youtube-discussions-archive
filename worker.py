@@ -21,12 +21,13 @@ from time import sleep
 from os import mkdir, rmdir, listdir, system, environ
 from os.path import isdir, isfile, getsize
 from json import loads
-
 import signal
 import tracker
 from shutil import rmtree, which
 from queue import Queue
 from gc import collect
+
+from discussions import main as discussion_pull
 
 # useful Queue example: https://stackoverflow.com/a/54658363
 jobs = Queue()
@@ -75,23 +76,12 @@ def threadrunner():
             if task == "submitdiscovery":
                 tracker.add_item_to_tracker(args, vid)
             elif task == "channel":
-                # TODO
-                # try:
-                #     y = ydl.extract_info("https://www.youtube.com/channel/" + desit.split(":", 1)[1], download=False)
-                #     for itemyv in y["entries"]:
-                #         jobs.put(("submitdiscovery", itemyv["id"], tracker.ItemType.Video))
-                #
-                #     # channel created playlists
-                #     y = process_channel(desit.split(":", 1)[1])
-                #     for itemyv in y["playlists"]:
-                #         jobs.put(("submitdiscovery", itemyv, tracker.ItemType.Playlist))
-                #     for itemyv in y["channels"]:
-                #         jobs.put(("submitdiscovery", itemyv, tracker.ItemType.Channel))
-                #
-                #     jobs.put(("complete", None, "channel:" + args))
-                # except:
-                #     print("YouTube-DL error, ignoring but not marking as complete...",
-                #           "https://www.youtube.com/channel/" + desit.split(":", 1)[1])
+                channel_id = desit.split(":", 1)[1]
+                try:
+                    discussion_pull(channel_id)
+                    jobs.put(("complete", None, "channel:" + args))
+                except:  # TODO
+                    print("Error while grabbing discussions. Ignoring and not marking as complete... " + channel_id)
 
             elif task == "complete":
                 size = 0
