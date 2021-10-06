@@ -140,6 +140,7 @@ def docontinuation(continuation, endpoint="browse"):
         sleep(timetosleep)
 
 def extractcomment(comment, is_reply=False):
+    comment_channel_ids = set()
     commentroot = {}
     try:
         if not is_reply:
@@ -157,6 +158,7 @@ def extractcomment(comment, is_reply=False):
     commentroot["authorThumbnail"] = itemint["authorThumbnail"]["thumbnails"][0]["url"] #joinurls(itemint["authorThumbnail"]["thumbnails"])
     if "browseId" in itemint["authorEndpoint"]["browseEndpoint"].keys():
         commentroot["authorEndpoint"] = itemint["authorEndpoint"]["browseEndpoint"]["browseId"]
+        comment_channel_ids.add(commentroot["authorEndpoint"])
     else:
         print("WARNING: Author UCID not provided, setting to blank.")
         commentroot["authorEndpoint"] = ""
@@ -188,23 +190,25 @@ def extractcomment(comment, is_reply=False):
                 commentroot["expected_replies"] = int(creplycntruns[1]["text"])
             myjrind = docontinuation(comment["commentThreadRenderer"]["replies"]["commentRepliesRenderer"]["contents"][0]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"], "comment/get_comment_replies")
             if myjrind == "[fail]":
-                return "fail", 0
+                return "fail", 0, comment_channel_ids
             if "continuationItems" in myjrind[0]["appendContinuationItemsAction"].keys():
                 myjr = myjrind[0]["appendContinuationItemsAction"]["continuationItems"]
             else:
                 print("WARNING: Missing continuationItems key, treating as end of comments.")
-                return commentroot, addcnt
+                return commentroot, addcnt, comment_channel_ids
 
             while True:
                 for itemr in myjr:
                     if "commentRenderer" in itemr.keys():
-                        commentroot["replies"].append(extractcomment(itemr, True)[0])
+                        reply, _, reply_channel_ids = extractcomment(itemr, True)
+                        commentroot["replies"].append(reply)
+                        comment_channel_ids.union(reply_channel_ids)
                         addcnt += 1
 
                 if "continuationItemRenderer" in myjr[-1].keys():
                     myjrin = docontinuation(myjr[-1]["continuationItemRenderer"]["button"]["buttonRenderer"]["command"]["continuationCommand"]["token"], "comment/get_comment_replies")
                     if myjrin == "[fail]":
-                        return "fail", 0
+                        return "fail", 0, comment_channel_ids
 
                     if "continuationItems" in myjrin[0]["appendContinuationItemsAction"].keys():
                         myjr = myjrin[0]["appendContinuationItemsAction"]["continuationItems"]
@@ -220,7 +224,7 @@ def extractcomment(comment, is_reply=False):
         if len(commentroot["replies"]) != commentroot["expected_replies"]:
             print("WARNING: Number of retrieved replies does not equal number of expected replies.")
 
-    return commentroot, addcnt
+    return commentroot, addcnt, comment_channel_ids
 
 
 def main(channel_id):
@@ -229,7 +233,7 @@ def main(channel_id):
     try:
         cont = docontinuation(_generate_discussion_continuation(channel_id))
         if cont == "[fail]":
-            return
+            return False, channel_ids
 
         if "continuationItems" in cont[1]["reloadContinuationItemsCommand"].keys():
             myj = cont[1]["reloadContinuationItemsCommand"]["continuationItems"]
@@ -247,20 +251,21 @@ def main(channel_id):
 
     comments = []
     commentcnt = 0
-
+    channel_ids = set()
     while True:
         for item in myj:
             if "commentThreadRenderer" in item.keys():
-                commentfinal, addcnt = extractcomment(item)
+                commentfinal, addcnt, comment_channel_ids = extractcomment(item)
                 if commentfinal == "fail":
-                    return
+                    return False, channel_ids
                 comments.append(commentfinal)
+                channel_ids.union(comment_channel_ids)
                 commentcnt += addcnt
 
         if "continuationItemRenderer" in myj[-1].keys():
             myjino = docontinuation(myj[-1]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"])
             if myj == "[fail]":
-                return
+                return False, channel_ids
 
             if "continuationItems" in myjino[0]["appendContinuationItemsAction"].keys():
                 myj = myjino[0]["appendContinuationItemsAction"]["continuationItems"]
@@ -283,7 +288,7 @@ def main(channel_id):
     open(channel_id+".json", "w").write(dumps({"UCID": channel_id, "expected_count": commentscount, "timestamp": timestamp, "comments": comments}, separators=(',', ':')))
 
     print("Success!")
-    return True
+    return True, channel_ids
         
 
 if len(argv) == 2:

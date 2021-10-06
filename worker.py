@@ -77,10 +77,11 @@ def threadrunner():
             elif task == "channel":
                 channel_id = desit.split(":", 1)[1]
                 try:
-                    result = discussion_pull(channel_id)
+                    result, channel_ids = discussion_pull(channel_id)
                     if not result:
                         raise Exception
                     jobs.put(("complete", None, "channel:" + args))
+                    # TODO: add channel ids to discovery
                 except:  # TODO
                     print("Error while grabbing discussions. Ignoring and not marking as complete... " + channel_id)
 
