@@ -202,7 +202,7 @@ def extractcomment(comment, is_reply=False):
                     if "commentRenderer" in itemr.keys():
                         reply, _, reply_channel_ids = extractcomment(itemr, True)
                         commentroot["replies"].append(reply)
-                        comment_channel_ids.union(reply_channel_ids)
+                        comment_channel_ids.update(reply_channel_ids)
                         addcnt += 1
 
                 if "continuationItemRenderer" in myjr[-1].keys():
@@ -259,7 +259,7 @@ def main(channel_id):
                 if commentfinal == "fail":
                     return False, set()
                 comments.append(commentfinal)
-                channel_ids.union(comment_channel_ids)
+                channel_ids.update(comment_channel_ids)
                 commentcnt += addcnt
 
         if "continuationItemRenderer" in myj[-1].keys():
@@ -292,7 +292,8 @@ def main(channel_id):
         
 
 if len(argv) == 2:
-    main(argv[1])
+    res = main(argv[1])
+    print(res)
 else:
     print("""YouTube Discussion Tab Downloader by tech234a
     ***THIS SCRIPT IS EXPERIMENTAL***
