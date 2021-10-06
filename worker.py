@@ -1,4 +1,3 @@
-# Let's remind people who still have this running to shut it down
 from os.path import isfile
 from json import loads
 from os import environ
