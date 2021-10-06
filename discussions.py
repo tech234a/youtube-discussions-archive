@@ -233,7 +233,7 @@ def main(channel_id):
     try:
         cont = docontinuation(_generate_discussion_continuation(channel_id))
         if cont == "[fail]":
-            return False, channel_ids
+            return False, set()
 
         if "continuationItems" in cont[1]["reloadContinuationItemsCommand"].keys():
             myj = cont[1]["reloadContinuationItemsCommand"]["continuationItems"]
@@ -257,7 +257,7 @@ def main(channel_id):
             if "commentThreadRenderer" in item.keys():
                 commentfinal, addcnt, comment_channel_ids = extractcomment(item)
                 if commentfinal == "fail":
-                    return False, channel_ids
+                    return False, set()
                 comments.append(commentfinal)
                 channel_ids.union(comment_channel_ids)
                 commentcnt += addcnt
@@ -265,7 +265,7 @@ def main(channel_id):
         if "continuationItemRenderer" in myj[-1].keys():
             myjino = docontinuation(myj[-1]["continuationItemRenderer"]["continuationEndpoint"]["continuationCommand"]["token"])
             if myj == "[fail]":
-                return False, channel_ids
+                return False, set()
 
             if "continuationItems" in myjino[0]["appendContinuationItemsAction"].keys():
                 myj = myjino[0]["appendContinuationItemsAction"]["continuationItems"]
