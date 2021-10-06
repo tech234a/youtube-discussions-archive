@@ -78,7 +78,9 @@ def threadrunner():
             elif task == "channel":
                 channel_id = desit.split(":", 1)[1]
                 try:
-                    discussion_pull(channel_id)
+                    result = discussion_pull(channel_id)
+                    if not result:
+                        raise Exception
                     jobs.put(("complete", None, "channel:" + args))
                 except:  # TODO
                     print("Error while grabbing discussions. Ignoring and not marking as complete... " + channel_id)

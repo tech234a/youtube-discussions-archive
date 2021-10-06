@@ -132,8 +132,8 @@ def docontinuation(continuation, endpoint="browse"):
 
         except:
             print("WARNING: Other error (type 2)")
-        if tries > 9:
-            print("WARNING: 10 failed attempts, aborting")
+        if tries > 5:
+            print("WARNING: 5 failed attempts, aborting")
             return "[fail]"
         tries += 1
         timetosleep = 10 * (2 ** (tries-2)) # 5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560 https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
@@ -241,7 +241,6 @@ def main(channel_id):
     except:
         print("Error in processing response: Are you rate-limited or trying to access a terminated or automatically-generated channel?")
         raise
-        return
 
     commentscount = int(cont[0]["reloadContinuationItemsCommand"]["continuationItems"][0]["commentsHeaderRenderer"]["countText"]["runs"][0]["text"].replace(",", ""))
 
@@ -285,6 +284,7 @@ def main(channel_id):
     open(channel_id+".json", "w").write(dumps({"UCID": channel_id, "expected_count": commentscount, "timestamp": timestamp, "comments": comments}, separators=(',', ':')))
 
     print("Success!")
+    return True
         
 
 if len(argv) == 2:
