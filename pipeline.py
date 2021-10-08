@@ -59,9 +59,9 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20211004.02'
-TRACKER_ID = 'reddit'
-TRACKER_HOST = 'legacy-api.arpa.li'
+VERSION = '20211008.01'
+TRACKER_ID = 'youtube-discussions'
+TRACKER_HOST = 'localhost'#'legacy-api.arpa.li'
 MULTI_ITEM_SIZE = 20
 
 
@@ -84,13 +84,13 @@ class CheckIP(SimpleTask):
             ip_set = set()
 
             ip_set.add(socket.gethostbyname('twitter.com'))
-            #ip_set.add(socket.gethostbyname('facebook.com'))
+            ip_set.add(socket.gethostbyname('facebook.com'))
             ip_set.add(socket.gethostbyname('youtube.com'))
             ip_set.add(socket.gethostbyname('microsoft.com'))
             ip_set.add(socket.gethostbyname('icanhas.cheezburger.com'))
             ip_set.add(socket.gethostbyname('archiveteam.org'))
 
-            if len(ip_set) != 5:
+            if len(ip_set) != 6:
                 item.log_output('Got IP addresses: {0}'.format(ip_set))
                 item.log_output(
                     'Are you behind a firewall/proxy? That is a big no-no!')
@@ -143,22 +143,22 @@ class MoveFiles(SimpleTask):
         shutil.rmtree('%(item_dir)s' % item)
 
 
-class SetBadUrls(SimpleTask):
-    def __init__(self):
-        SimpleTask.__init__(self, 'SetBadUrls')
+# class SetBadUrls(SimpleTask):
+#     def __init__(self):
+#         SimpleTask.__init__(self, 'SetBadUrls')
 
-    def process(self, item):
-        item['item_name_original'] = item['item_name']
-        items = item['item_name'].split('\0')
-        items_lower = [s.lower() for s in items]
-        with open('%(item_dir)s/%(warc_file_base)s_bad-items.txt' % item, 'r') as f:
-            for aborted_item in f:
-                aborted_item = aborted_item.strip().lower()
-                index = items_lower.index(aborted_item)
-                item.log_output('Item {} is aborted.'.format(aborted_item))
-                items.pop(index)
-                items_lower.pop(index)
-        item['item_name'] = '\0'.join(items)
+#     def process(self, item):
+#         item['item_name_original'] = item['item_name']
+#         items = item['item_name'].split('\0')
+#         items_lower = [s.lower() for s in items]
+#         with open('%(item_dir)s/%(warc_file_base)s_bad-items.txt' % item, 'r') as f:
+#             for aborted_item in f:
+#                 aborted_item = aborted_item.strip().lower()
+#                 index = items_lower.index(aborted_item)
+#                 item.log_output('Item {} is aborted.'.format(aborted_item))
+#                 items.pop(index)
+#                 items_lower.pop(index)
+#         item['item_name'] = '\0'.join(items)
 
 
 class MaybeSendDoneToTracker(SendDoneToTracker):
@@ -174,130 +174,130 @@ def get_hash(filename):
 
 CWD = os.getcwd()
 PIPELINE_SHA1 = get_hash(os.path.join(CWD, 'pipeline.py'))
-LUA_SHA1 = get_hash(os.path.join(CWD, 'reddit.lua'))
+#LUA_SHA1 = get_hash(os.path.join(CWD, 'reddit.lua'))
 
 def stats_id_function(item):
     d = {
         'pipeline_hash': PIPELINE_SHA1,
-        'lua_hash': LUA_SHA1,
+        #'lua_hash': LUA_SHA1,
         'python_version': sys.version,
     }
 
     return d
 
 
-class ZstdDict(object):
-    created = 0
-    data = None
+# class ZstdDict(object):
+#     created = 0
+#     data = None
 
-    @classmethod
-    def get_dict(cls):
-        if cls.data is not None and time.time() - cls.created < 1800:
-            return cls.data
-        response = requests.get(
-            'https://legacy-api.arpa.li/dictionary',
-            params={
-                'project': 'reddit'
-            }
-        )
-        response.raise_for_status()
-        response = response.json()
-        if cls.data is not None and response['id'] == cls.data['id']:
-            cls.created = time.time()
-            return cls.data
-        print('Downloading latest dictionary.')
-        response_dict = requests.get(response['url'])
-        response_dict.raise_for_status()
-        raw_data = response_dict.content
-        if hashlib.sha256(raw_data).hexdigest() != response['sha256']:
-            raise ValueError('Hash of downloaded dictionary does not match.')
-        if raw_data[:4] == b'\x28\xB5\x2F\xFD':
-            raw_data = zstandard.ZstdDecompressor().decompress(raw_data)
-        cls.data = {
-            'id': response['id'],
-            'dict': raw_data
-        }
-        cls.created = time.time()
-        return cls.data
+#     @classmethod
+#     def get_dict(cls):
+#         if cls.data is not None and time.time() - cls.created < 1800:
+#             return cls.data
+#         response = requests.get(
+#             'https://legacy-api.arpa.li/dictionary',
+#             params={
+#                 'project': TRACKER_ID
+#             }
+#         )
+#         response.raise_for_status()
+#         response = response.json()
+#         if cls.data is not None and response['id'] == cls.data['id']:
+#             cls.created = time.time()
+#             return cls.data
+#         print('Downloading latest dictionary.')
+#         response_dict = requests.get(response['url'])
+#         response_dict.raise_for_status()
+#         raw_data = response_dict.content
+#         if hashlib.sha256(raw_data).hexdigest() != response['sha256']:
+#             raise ValueError('Hash of downloaded dictionary does not match.')
+#         if raw_data[:4] == b'\x28\xB5\x2F\xFD':
+#             raw_data = zstandard.ZstdDecompressor().decompress(raw_data)
+#         cls.data = {
+#             'id': response['id'],
+#             'dict': raw_data
+#         }
+#         cls.created = time.time()
+#         return cls.data
 
 
-class WgetArgs(object):
-    post_chars = string.digits + string.ascii_lowercase
+# class WgetArgs(object):
+#     post_chars = string.digits + string.ascii_lowercase
 
-    def int_to_str(self, i):
-        d, m = divmod(i, 36)
-        if d > 0:
-            return self.int_to_str(d) + self.post_chars[m]
-        return self.post_chars[m]
+#     def int_to_str(self, i):
+#         d, m = divmod(i, 36)
+#         if d > 0:
+#             return self.int_to_str(d) + self.post_chars[m]
+#         return self.post_chars[m]
 
-    def realize(self, item):
-        with open('user-agents', 'r') as f:
-            user_agent = random.choice(list(f)).strip()
-        wget_args = [
-            WGET_AT,
-            '-U', user_agent,
-            '-nv',
-            '--load-cookies', 'cookies.txt',
-            '--content-on-error',
-            '--no-http-keep-alive',
-            '--lua-script', 'reddit.lua',
-            '-o', ItemInterpolation('%(item_dir)s/wget.log'),
-            '--no-check-certificate',
-            '--output-document', ItemInterpolation('%(item_dir)s/wget.tmp'),
-            '--truncate-output',
-            '-e', 'robots=off',
-            '--rotate-dns',
-            '--recursive', '--level=inf',
-            '--no-parent',
-            '--page-requisites',
-            '--timeout', '30',
-            '--tries', 'inf',
-            '--domains', 'reddit.com',
-            '--span-hosts',
-            '--waitretry', '30',
-            '--warc-file', ItemInterpolation('%(item_dir)s/%(warc_file_base)s'),
-            '--warc-header', 'operator: Archive Team',
-            '--warc-header', 'x-wget-at-project-version: ' + VERSION,
-            '--warc-header', 'x-wget-at-project-name: ' + TRACKER_ID,
-            '--warc-dedup-url-agnostic',
-            '--warc-compression-use-zstd',
-            '--warc-zstd-dict-no-include',
-            '--header', 'Accept-Language: en-US;q=0.9, en;q=0.8',
-            '--secure-protocol', 'TLSv1_2'
-        ]
-        dict_data = ZstdDict.get_dict()
-        with open(os.path.join(item['item_dir'], 'zstdict'), 'wb') as f:
-            f.write(dict_data['dict'])
-        item['dict_id'] = dict_data['id']
-        item['dict_project'] = 'reddit'
-        wget_args.extend([
-            '--warc-zstd-dict', ItemInterpolation('%(item_dir)s/zstdict'),
-        ])
+#     def realize(self, item):
+#         with open('user-agents', 'r') as f:
+#             user_agent = random.choice(list(f)).strip()
+#         wget_args = [
+#             WGET_AT,
+#             '-U', user_agent,
+#             '-nv',
+#             '--load-cookies', 'cookies.txt',
+#             '--content-on-error',
+#             '--no-http-keep-alive',
+#             '--lua-script', 'reddit.lua',
+#             '-o', ItemInterpolation('%(item_dir)s/wget.log'),
+#             '--no-check-certificate',
+#             '--output-document', ItemInterpolation('%(item_dir)s/wget.tmp'),
+#             '--truncate-output',
+#             '-e', 'robots=off',
+#             '--rotate-dns',
+#             '--recursive', '--level=inf',
+#             '--no-parent',
+#             '--page-requisites',
+#             '--timeout', '30',
+#             '--tries', 'inf',
+#             '--domains', 'reddit.com',
+#             '--span-hosts',
+#             '--waitretry', '30',
+#             '--warc-file', ItemInterpolation('%(item_dir)s/%(warc_file_base)s'),
+#             '--warc-header', 'operator: Archive Team',
+#             '--warc-header', 'x-wget-at-project-version: ' + VERSION,
+#             '--warc-header', 'x-wget-at-project-name: ' + TRACKER_ID,
+#             '--warc-dedup-url-agnostic',
+#             '--warc-compression-use-zstd',
+#             '--warc-zstd-dict-no-include',
+#             '--header', 'Accept-Language: en-US;q=0.9, en;q=0.8',
+#             '--secure-protocol', 'TLSv1_2'
+#         ]
+#         dict_data = ZstdDict.get_dict()
+#         with open(os.path.join(item['item_dir'], 'zstdict'), 'wb') as f:
+#             f.write(dict_data['dict'])
+#         item['dict_id'] = dict_data['id']
+#         item['dict_project'] = 'reddit'
+#         wget_args.extend([
+#             '--warc-zstd-dict', ItemInterpolation('%(item_dir)s/zstdict'),
+#         ])
 
-        for item_name in item['item_name'].split('\0'):
-          wget_args.extend(['--warc-header', 'x-wget-at-project-item-name: '+item_name])
-          wget_args.append('item-name://'+item_name)
-          item_type, item_value = item_name.split(':', 1)
-          if item_type in ('post', 'comment'):
-              if item_type == 'post':
-                  wget_args.extend(['--warc-header', 'reddit-post: '+item_value])
-                  wget_args.append('https://www.reddit.com/api/info.json?id=t3_'+item_value)
-              elif item_type == 'comment':
-                  wget_args.extend(['--warc-header', 'reddit-comment: '+item_value])
-                  wget_args.append('https://www.reddit.com/api/info.json?id=t1_'+item_value)
-          else:
-              raise Exception('Unknown item')
+#         for item_name in item['item_name'].split('\0'):
+#           wget_args.extend(['--warc-header', 'x-wget-at-project-item-name: '+item_name])
+#           wget_args.append('item-name://'+item_name)
+#           item_type, item_value = item_name.split(':', 1)
+#           if item_type in ('post', 'comment'):
+#               if item_type == 'post':
+#                   wget_args.extend(['--warc-header', 'reddit-post: '+item_value])
+#                   wget_args.append('https://www.reddit.com/api/info.json?id=t3_'+item_value)
+#               elif item_type == 'comment':
+#                   wget_args.extend(['--warc-header', 'reddit-comment: '+item_value])
+#                   wget_args.append('https://www.reddit.com/api/info.json?id=t1_'+item_value)
+#           else:
+#               raise Exception('Unknown item')
 
-        item['item_name_newline'] = item['item_name'].replace('\0', '\n')
+#         item['item_name_newline'] = item['item_name'].replace('\0', '\n')
 
-        if 'bind_address' in globals():
-            wget_args.extend(['--bind-address', globals()['bind_address']])
-            print('')
-            print('*** Wget will bind address at {0} ***'.format(
-                globals()['bind_address']))
-            print('')
+#         if 'bind_address' in globals():
+#             wget_args.extend(['--bind-address', globals()['bind_address']])
+#             print('')
+#             print('*** Wget will bind address at {0} ***'.format(
+#                 globals()['bind_address']))
+#             print('')
 
-        return realize(wget_args, item)
+#         return realize(wget_args, item)
 
 ###########################################################################
 # Initialize the project.
@@ -305,11 +305,11 @@ class WgetArgs(object):
 # This will be shown in the warrior management panel. The logo should not
 # be too big. The deadline is optional.
 project = Project(
-    title='reddit',
+    title=TRACKER_ID,
     project_html='''
         <img class="project-logo" alt="Project logo" src="https://www.archiveteam.org/images/b/b5/Reddit_logo.png" height="50px" title=""/>
-        <h2>reddit.com <span class="links"><a href="https://reddit.com/">Website</a> &middot; <a href="http://tracker.archiveteam.org/reddit/">Leaderboard</a></span></h2>
-        <p>Archiving everything from reddit.</p>
+        <h2>YouTube Discussions <span class="links"><a href="https://www.youtube.com/">Website</a> &middot; <a href="http://tracker.archiveteam.org/youtube-discussions/">Leaderboard</a></span></h2>
+        <p>Archiving everything from YouTube Discussions.</p>
     '''
 )
 
@@ -318,18 +318,18 @@ pipeline = Pipeline(
     GetItemFromTracker('http://{}/{}/multi={}/'
         .format(TRACKER_HOST, TRACKER_ID, MULTI_ITEM_SIZE),
         downloader, VERSION),
-    PrepareDirectories(warc_prefix='reddit'),
-    WgetDownload(
-        WgetArgs(),
-        max_tries=2,
-        accept_on_exit_code=[0, 4, 8],
-        env={
-            'item_dir': ItemValue('item_dir'),
-            'item_names': ItemValue('item_name_newline'),
-            'warc_file_base': ItemValue('warc_file_base'),
-        }
-    ),
-    SetBadUrls(),
+    PrepareDirectories(warc_prefix=TRACKER_ID),
+    # WgetDownload(
+    #     WgetArgs(),
+    #     max_tries=2,
+    #     accept_on_exit_code=[0, 4, 8],
+    #     env={
+    #         'item_dir': ItemValue('item_dir'),
+    #         'item_names': ItemValue('item_name_newline'),
+    #         'warc_file_base': ItemValue('warc_file_base'),
+    #     }
+    # ),
+    # SetBadUrls(),
     PrepareStatsForTracker(
         defaults={'downloader': downloader, 'version': VERSION},
         file_groups={
