@@ -5,7 +5,7 @@ from requests import session
 from json import loads, dumps
 from time import time, sleep
 from sys import argv
-
+from pathlib import Path
 from datetime import datetime
 
 #todo: check for accuracy, add/test ratelimit checks if needed, additional language locking (headers)/ gl US
@@ -227,7 +227,7 @@ def extractcomment(comment, is_reply=False):
     return commentroot, addcnt, comment_channel_ids
 
 
-def main(channel_id):
+def main(channel_id, download_dir):
     timestamp = time()
 
     try:
@@ -285,14 +285,14 @@ def main(channel_id):
         print("INFO: Number of retrieved comments does not equal expected count. This is a common occurence due to inaccuracies in YouTube's counting system and can safely be ignored in most cases.")
 
     # minify JSON https://stackoverflow.com/a/33233406
-    open(channel_id+".json", "w").write(dumps({"UCID": channel_id, "expected_count": commentscount, "timestamp": timestamp, "comments": comments}, separators=(',', ':')))
+    open(Path(download_dir, channel_id+".json"), "w").write(dumps({"UCID": channel_id, "expected_count": commentscount, "timestamp": timestamp, "comments": comments}, separators=(',', ':')))
 
     print("Success!")
     return True, channel_ids
         
 
 if len(argv) == 2:
-    res = main(argv[1])
+    res = main(argv[1], '.')
     print(res)
 else:
     print("""YouTube Discussion Tab Downloader by tech234a

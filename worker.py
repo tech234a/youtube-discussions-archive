@@ -32,11 +32,6 @@ from discussions import main as discussion_pull
 jobs = Queue()
 
 try:
-    mkdir("out")
-except:
-    pass
-
-try:
     mkdir("directory")
 except:
     pass
@@ -77,7 +72,7 @@ def threadrunner():
             elif task == "channel":
                 channel_id = desit.split(":", 1)[1]
                 try:
-                    result, channel_ids = discussion_pull(channel_id)
+                    result, channel_ids = discussion_pull(channel_id, 'directory/')
                     if not result:
                         raise Exception
                     jobs.put(("complete", None, "channel:" + args))
